@@ -31,7 +31,7 @@ function main() {
 
     if (UPgenTick < 0) {
         upgrades = upgrades.add(new Decimal(UpgMult[tier]));
-        UPgenTick = tickspeed/10;
+        UPgenTick = tickspeed;
     }
     updateUI(pointsPerSec);
 }
