@@ -1,0 +1,395 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Lexend+Deca:wght@100..900&family=Outfit:wght@100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+  rel="stylesheet">
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>One Upgrade per Second</title>
+
+  <style>
+    body {
+      font-family: 'Lexend Deca';
+      background: #000000;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+    }
+
+    .title {
+      font-size: 2.5em;
+      margin: 30px 0;
+      text-align: center;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      background: transparent;
+      color: rgb(191, 255, 0);
+      border: 3px solid white;
+      padding: 10px 25px;
+      border-radius: 15px;
+      font-size: 1.5em;
+    }
+
+    .tab:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .tab.active {
+      background: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .content {
+      display: none;
+      padding: 20px;
+      max-width: 800px;
+    }
+
+    .content.active {
+      display: block;
+    }
+
+    #fragmentsContent {
+      max-width: none;
+      width: 100%;
+    }
+
+    .stat-line {
+      font-size: 1.8em;
+      margin: 20px 0;
+      line-height: 1.6;
+    }
+
+    .point-line {
+      color: #707070;
+    }
+
+    .upgrade-line {
+      color: #44ef5b;
+    }
+
+    .rebirth-line {
+      color: #3b82f6;
+    }
+
+    .tier-btn {
+      background: #c7c9c8;
+      color: white;
+      border: 2px solid #60a5fa;
+      padding: 12px 30px;
+      font-size: 1.3em;
+      margin-top: 30px;
+      cursor: pointer;
+    }
+
+    .tier-btn:hover {
+      background: #c6c6c6;
+      transform: translateY(-2px);
+    }
+
+    .tier-btn:disabled {
+      background: #444;
+      border-color: #666;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .save-btn {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      border: 2px solid #4ade80;
+      padding: 12px 30px;
+      font-size: 1.3em;
+      margin: 10px 5px;
+      transition: all 0.25s ease;
+    }
+
+    .save-btn:hover {
+      background: linear-gradient(135deg, #4ade80, #22c55e);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+      transform: translateY(-2px);
+    }
+
+    textarea {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px;
+      font-size: 1em;
+      background: #000;
+      border: 2px dashed rgba(255, 255, 255, 0.4);
+      margin: 10px 0;
+    }
+
+    textarea::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    #tierContent {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .tier-info-header {
+      text-align: center;
+      font-size: 1.3em;
+      margin-bottom: 30px;
+      opacity: 0.85;
+    }
+
+    .tier-compare-container {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      gap: 30px;
+      width: 100%;
+    }
+
+    .tier-card {
+      background: #0a0a0a;
+      border: 2px solid rgba(255, 255, 255, 0.25);
+      width: 400px;
+      min-height: 300px;
+      padding: 20px;
+      box-sizing: border-box;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .tier-card:hover {
+      transform: translateY(-4px);
+      border-color: #60a5fa;
+    }
+
+    .tier-card-header {
+      text-align: center;
+      font-size: 1.7em;
+      margin-bottom: 15px;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+      padding-bottom: 8px;
+    }
+
+    .benefit-line {
+      font-size: 1.15em;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .benefit-green {
+      color: #22c55e;
+    }
+
+    .benefit-red {
+      color: #ef4444;
+    }
+
+    .benefit-blue {
+      color: #3b82f6;
+    }
+
+    .benefit-yellow {
+      color: #ffc31d;
+    }
+
+    .benefit-purple {
+      color: #bf00ff;
+    }
+
+    .new-tag {
+      color: white;
+      font-size: 0.7em;
+    }
+
+    .tier-arrow {
+      align-self: center;
+      font-size: 3em;
+      opacity: 0.6;
+    }
+
+    #optionsContent {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      text-align: center;
+    }
+
+    #optionsContent button {
+      min-width: 180px;
+    }
+
+    #hardResetBtn {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      border-color: #ef4444;
+    }
+
+    #hardResetBtn:hover {
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
+    }
+
+    .energy-header {
+      text-align: center;
+      font-size: 2em;
+      margin-bottom: 30px;
+      color: #facc15;
+      font-family: 'Lexend Deca', sans-serif;
+    }
+
+    .fragment-header {
+      text-align: center;
+      font-size: 3em;
+      margin-bottom: 20px;
+      color: #a855f7;
+      font-family: 'Lexend Deca', sans-serif;
+    }
+
+    .energy-upgrades {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+      padding: 0px;
+    }
+
+    .upgrade-btn {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .upgrade-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .upgrade-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .upgrade-btn.bought {
+      border: 1px solid #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+      opacity: 0.8;
+    }
+
+    .upg-title {
+      font-weight: bold;
+      color: #facc15;
+      margin-bottom: 4px;
+    }
+
+    .upg-cost {
+      font-size: 0.9em;
+      color: #9ca3af;
+      margin-bottom: 2px;
+    }
+
+    .upg-desc {
+      font-size: 0.85em;
+      color: #e5e7eb;
+      margin-bottom: 4px;
+    }
+
+    .upg-total {
+      font-size: 0.85em;
+      color: #1eff00;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 20px;
+      background-color: #333;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background-color: #facc15;
+      width: 0%;
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+      transition: width 0.1s linear;
+    }
+
+    .progress-text {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      top: 0;
+      left: 0;
+      line-height: 20px;
+      font-size: 0.8em;
+      color: white;
+      text-shadow: 0 0 2px black;
+    }
+  </style>
+</head>
+
+<body>
+  <h1 class="title">One Upgrade per Second</h1>
+
+  <div class="tabs">
+    <button class="tab active" id="mainTab">Main</button>
+    <button class="tab" id="tierTab">Tier Up</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="content active" id="mainContent">
+    <div class="header">Any upgrades bought or any resets will fully reset Point amount!</div>
+    <div class="stat-line point-line" id="pointDisplay">Points: 0 (+1/sec)</div>
+    <div class="stat-line upgrade-line" id="upgDisplay">Upgrades: 0 (+1/sec), Tickspeed: 1.000s</div>
+        <button id="booster1" class="upgrade-btn" onclick="buyBooster1()">
+            <span class="upg-title">Booster I</span><br>
+            <span class="upg-cost" id="b1-cost">Cost: 10 Upgrades</span><br>
+            <span class="upg-desc" id="b1-desc">Reduces tickspeed by 10%<br> Tickspeed: 1.000s >> 0.900s</span>
+        </button>
+    <div class="stat-line rebirth-line" id="rebirthDisplay">Rebirths: 0 (Gain: 0, Next at 500 Upgrades)</div>
+  </div>
+
+  <!-- TIER UP -->
+  <div class="content" id="tierContent">
+    <div class="tier-info-header">Advance your progress with a Tier Up!</div>
+    <div class="tier-compare-container">
+        <div class="tier-card">
+            <div class="tier-card-header">Current Tier</div>
+            <div class="benefit-line" id="currenttierbenefit">Base Upgrade Interval: <span class="benefit-green">1.000s</span><br>Points Multiplier: <span class="benefit-blue">1.50x</span>/upg<br>Upgrade Multiplier: <span class="benefit-green">1.00x</span></div>
+            <div class="benefit-line" id="currenttierunlock"></div>
+        </div>
+        <div class="tier-arrow">→</div>
+        <div class="tier-card">
+            <div class="tier-card-header">Next Tier</div>
+            <div class="benefit-line" id="nexttierbenefit">Base Upgrade Interval: <span class="benefit-green">0.900s</span><br>Points Multiplier: <span class="benefit-blue">1.50x</span>/upg<br>Upgrade Multiplier: <span class="benefit-green">1.00x</span></div>
+            <div class="benefit-line" id="nexttierunlock">UNLOCK: <span class="benefit-yellow">Booster I</span></div>
+            <button class="tier-btn" id="tierUpBtn" onclick="tierUp()" disabled>Get 1e12 Points to Tier Up!</button>
+        </div>
+    </div>
+  </div>
+
+  <script src="break_eternity.js"></script>
+  <script src="NumberFormat.js"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
