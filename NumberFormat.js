@@ -4,7 +4,7 @@ function exponentialFormat(num, precision, mantissa = true) {
    let e = num.log10().floor()
    let m = num.div(Decimal.pow(10, e))
    if (m.toStringWithDecimalPlaces(precision) == 10) {
-       m = decimalOne
+       m = new Decimal(1)
        e = e.add(1)
    }
    if (options.notation === 'mixed scientific' || options.notation === 'default') {
@@ -302,7 +302,7 @@ function format(decimal, precision = 3, small) {
        if ((decimal.sub(Math.floor(decimal))).eq(0)) {
            return commaFormat(decimal, 0)
        } else {
-           return commaFormat(decimal, 3)
+           return commaFormat(decimal, precision)
        }
    }
    else if (decimal.gte(0.0001) || !small) return regularFormat(decimal, precision)

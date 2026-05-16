@@ -17,8 +17,16 @@ var modInfo = {
 
 var points, upgrades, SUpgrades, lastTick, UPgenTick, tickspeed, b1cost, tiercost, tier, tsboost;
 var PointMult = [1.5, 1.5, 1.6, 1.7];
-var UpgMult = [1, 1, 2, 3];
+var UpgMult = [1, 1, 2, 3.75];
+var SUs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+var Boosters = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+var SUCost = [new Decimal(1),new Decimal(10)]
 var tierUnl = ["", "Booster I", "the Super Upgrade Reset Layer", "Surges"];
+var surgecd = 20
+var surgemaxcd = 20
+var surgeactive = 0
+var surgeupgmulti = 2
+var surgespdmulti = 2
 
 function resetData() {
     points = new Decimal(0);
@@ -31,6 +39,11 @@ function resetData() {
     tiercost = new Decimal(1e9);
     tier = 0;
     tsboost = new Decimal(1);
+    surgecd = 20;
+    surgemaxcd = 20;
+    surgeactive = 0;
+    surgeupgmulti = 2;
+    surgespdmulti = 2;
 }
 
 // Initial initialization: set defaults first, then overwrite with save data
@@ -44,10 +57,30 @@ function main() {
         let now = Date.now();
     let diff = (now - lastTick) / 1000; // time delta in seconds
     lastTick = now;
-    UPgenTick = UPgenTick - (diff*1000);
+
+    if (tier >= 3) {
+        if (surgeactive == 0) {
+            surgecd = surgecd - diff;
+            if (surgecd <= 0) {
+                surgeactive = 10;
+            }
+        }
+        if (surgeactive > 0) {
+            surgeactive = surgeactive - diff;
+            if (surgeactive <= 0) {
+                surgecd = surgemaxcd;
+                surgeactive = 0;
+            }
+        }
+    }
+
+    let gameDiff = diff;
+    if (surgeactive > 0) gameDiff *= surgespdmulti;
+
+    UPgenTick = UPgenTick - (gameDiff*1000);
 
     let pointsPerSec = Decimal.pow(PointMult[tier], upgrades);
-    points = points.add(pointsPerSec.times(diff));
+    points = points.add(pointsPerSec.times(gameDiff));
     let pctdrain = 0.1
     if (tsboost > 1) {
         tsboost = tsboost.sub(1).mul(1-pctdrain).add(1)
@@ -57,11 +90,29 @@ function main() {
     }
     if (UPgenTick < 0) {
         let gain = new Decimal(UpgMult[tier]);
+        gain = gain * (SUs[0]+1)
+        if (surgeactive > 0) gain = gain * surgeupgmulti;
         upgrades = upgrades.add(gain);
         // Reset tick to scaled tickspeed
         UPgenTick = tickspeed / tsboost.toNumber();
     }
-        updateUI(pointsPerSec);
+    let base = 2
+    if (SUs[1] >= 1) {
+        base = 1.8
+        if (SUs[1] >= 2) base = 1.6
+        SUCost[1] = new Decimal(250)
+    }
+    b1cost = new Decimal(base).pow(Boosters[0]).mul(10)
+    if (Boosters[0]>=8) b1cost = b1cost.mul(new Decimal(1.5).pow(Boosters[0]-7))
+    if (Boosters[0]>=14) b1cost = b1cost.mul(new Decimal(1.4).pow(Boosters[0]-13))
+    if (Boosters[0]>=20) b1cost = b1cost.mul(new Decimal(1.7).pow(Boosters[0]-19))
+    if (Boosters[0]>=25) b1cost = b1cost.mul(new Decimal(2).pow(Boosters[0]-24))
+    b1cost = Decimal.floor(b1cost)
+    SUCost[0] = Decimal.floor(new Decimal(base).pow(SUs[0]));
+    SUCost[1] = new Decimal(10);
+        let displayPPS = pointsPerSec;
+        if (surgeactive > 0) displayPPS = displayPPS.times(surgespdmulti);
+        updateUI(displayPPS);
     } catch (e) {
         console.error("Main loop error:", e);
     }
@@ -70,14 +121,31 @@ function main() {
 
 function updateUI(pointsPerSec) {
     let effectiveTickspeed = tickspeed / tsboost.toNumber();
+    if (surgeactive > 0) effectiveTickspeed /= surgespdmulti;
+
     let upsps = 1000 / effectiveTickspeed;
     upsps = upsps * UpgMult[tier]
+    upsps = upsps * (SUs[0]+1)
+    if (surgeactive > 0) upsps = upsps * surgeupgmulti;
 
     document.getElementById("pointDisplay").innerHTML = `Points: ${format(points)} (+${format(pointsPerSec)}/sec)`;
     document.getElementById("upgDisplay").innerHTML = `Upgrades: ${format(upgrades)} (+${format(upsps, 3)}/sec, Tickspeed: ${format(effectiveTickspeed / 1000, 4)}s)`;
     let rebgain = Decimal.floor(upgrades.div(500))
-    document.getElementById("SUpgradeDisplay").innerHTML = `SUpgrades: ${format(SUpgrades)} (Gain: ${format(rebgain)}, Next at ${format(new Decimal(500).mul(rebgain.add(1)))} Upgrades)`
-    document.getElementById("b1-cost").innerHTML = `Cost: ${format(b1cost)} Upgrades`
+    document.getElementById("SUpgradeDisplay").innerHTML = `SUpgrades: ${format(SUpgrades)}`
+    let costBooster1 = `Cost: ${format(b1cost)} Upgrades`
+    if (Boosters[0] >= 8) {
+        costBooster1 = `Cost: ${format(b1cost)} Upgrades [Minicapped]`
+    }
+    if (Boosters[0] >= 14) {
+        costBooster1 = `Cost: ${format(b1cost)} Upgrades [Minorcapped]`
+    }
+    if (Boosters[0] >= 20) {
+        costBooster1 = `Cost: ${format(b1cost)} Upgrades [Softcapped]`
+    }
+    if (Boosters[0] >= 25) {
+        costBooster1 = `Cost: ${format(b1cost)} Upgrades [Softcapped²]`
+    }
+    document.getElementById("b1-cost").innerHTML = costBooster1
     document.getElementById("b1-desc").innerHTML = `Reduces tickspeed by 10%<br> Tickspeed: ${format(tickspeed / 1000, 3)}s >> ${format(tickspeed * 0.9 / 1000, 3)}s`
     document.getElementById('topLeftBtn').innerHTML = `Click to increase Upgrade tickspeed!<br>Currently: x${format(tsboost, 2)}`
 
@@ -86,12 +154,71 @@ function updateUI(pointsPerSec) {
     } else {
         document.getElementById("booster1").hidden = false
     }
+    if (tier < 2) {
+        document.getElementById("superUpBtn").hidden = true
+        document.getElementById("SU1").hidden = true
+        document.getElementById("SU2").hidden = true
+    } else {
+        document.getElementById("superUpBtn").hidden = false
+        document.getElementById("SU1").hidden = false
+        document.getElementById("SU2").hidden = false
+    }
+    if (SUs[0] > 0) {
+        document.getElementById("SU2").hidden = false
+    } else {
+        document.getElementById("SU2").hidden = true
+    }
+    if (upgrades.lt(500)) {
+        document.getElementById("superUpBtn").disabled = true
+    } else {
+        document.getElementById("superUpBtn").disabled = false
+    }
+    document.getElementById("SU1-cost").innerHTML = `Cost: ${format(SUCost[0])} Super Upgrades`
+    document.getElementById("SU1-desc").innerHTML = `+1 Base Upgrade a second<br>Total: +${format(SUs[0])} Upgrades`
+    document.getElementById("superUpBtn").innerHTML = `Reset for Super Upgrades! (Gain: ${format(rebgain)}, Next at ${format(new Decimal(500).mul(rebgain.add(1)))} Upgrades)`
+    if (SUpgrades.gte(SUCost[0])) {
+        document.getElementById("SU1").disabled = false
+    } else {
+        document.getElementById("SU1").disabled = true
+    }
+
+    if (SUs[1] >= 2) {
+        document.getElementById("SU2").disabled = true
+        document.getElementById("SU2-cost").innerHTML = "Cost: 250 Super Upgrades [BOUGHT!]"
+        document.getElementById("SU2-desc").innerHTML = "Cost scaling of Super Upgrade I and Booster I is further weakened."
+    } else {
+        if (SUs[1] == 1) {
+            document.getElementById("SU2-cost").innerHTML = "Cost: 250 Super Upgrades"
+            document.getElementById("SU2-desc").innerHTML = "Cost scaling of Super Upgrade I and Booster I is further weakened."
+        } else {
+            document.getElementById("SU2-cost").innerHTML = "Cost: 10 Super Upgrades"
+            document.getElementById("SU2-desc").innerHTML = "Cost scaling of Super Upgrade I and Booster I is weakened."
+        }
+        if (SUpgrades.gte(SUCost[1])) {
+            document.getElementById("SU2").disabled = false
+        } else {
+            document.getElementById("SU2").disabled = true
+        }
+    }
+
+    // Surge Display
+
+    if (tier >= 3) {
+        document.getElementById("surgestatus").hidden = false;
+    } else {
+        document.getElementById("surgestatus").hidden = true;
+    }
+    if (surgeactive > 0) {
+        document.getElementById("surgestatus").innerHTML = `SURGE STATUS: ACTIVE (x${format(surgeupgmulti, 2)} Upgrade Production and x${format(surgespdmulti, 2)} Speed for ${format(surgeactive, 2)} seconds)`;
+    } else {
+        document.getElementById("surgestatus").innerHTML = `SURGE STATUS: INACTIVE (Recharging: ${format((1-surgecd/surgemaxcd)*100, 1)}%)`;
+    }
 
     let canTierUp = points.gte(tiercost);
-    if (tier == 3) canTierUp = SUpgrades.gte(tiercost); // Following existing logic in tierUp()
+    if (tier == 2) canTierUp = SUpgrades.gte(tiercost); // Following existing logic in tierUp()
 
     document.getElementById("tierUpBtn").disabled = !canTierUp;
-    document.getElementById("tierUpBtn").innerHTML = canTierUp ? "TIER UP!" : `Get ${format(tiercost)} ${tier == 3 ? 'SUpgrades' : 'Points'} to Tier Up!`;
+    document.getElementById("tierUpBtn").innerHTML = canTierUp ? "TIER UP!" : `Get ${format(tiercost)} ${tier == 2 ? 'SUpgrades' : 'Points'} to Tier Up!`;
 }
 
 // Tab Switching
@@ -128,7 +255,14 @@ function getSaveData() {
         b1cost: b1cost.toString(),
         tier: tier,
         options: options,
+        SUs: SUs,
         tsboost: tsboost.toString(),
+        Boosters: Boosters,
+        surgecd: surgecd,
+        surgemaxcd: surgemaxcd,
+        surgeactive: surgeactive,
+        surgeupgmulti: surgeupgmulti,
+        surgespdmulti: surgespdmulti,
     };
     return save;
 }
@@ -154,7 +288,14 @@ function loadGame(manual = false) {
         if (save.b1cost !== undefined) b1cost = new Decimal(save.b1cost);
         if (save.tier !== undefined) tier = save.tier;
         if (save.options !== undefined) options = save.options;
+        if (save.SUs !== undefined) SUs = save.SUs;
         if (save.tsboost !== undefined) tsboost = new Decimal(save.tsboost);
+        if (save.Boosters !== undefined) Boosters = save.Boosters;
+        if (save.surgecd !== undefined) surgecd = save.surgecd;
+        if (save.surgemaxcd !== undefined) surgemaxcd = save.surgemaxcd;
+        if (save.surgeactive !== undefined) surgeactive = save.surgeactive;
+        if (save.surgeupgmulti !== undefined) surgeupgmulti = save.surgeupgmulti;
+        if (save.surgespdmulti !== undefined) surgespdmulti = save.surgespdmulti;
         
         getNewTierCosts();
         getNewTierDisplay();
@@ -206,42 +347,60 @@ function buyBooster1() {
     if (upgrades.gte(b1cost)) {
         upgrades = upgrades.sub(b1cost);
         tickspeed = tickspeed * 0.9;
-        b1cost = b1cost.mul(2)
+        Boosters[0] += 1
+        let base = 2
+        if (SUs[1] >= 1) base = 1.8
+        b1cost = Decimal.floor(new Decimal(base).pow(Boosters[0]).mul(10))
         points = new Decimal(0)
     }
 }
 
+function buySU(id) {
+    if (id === 2 && SUs[1] >= 1) return;
+    if (SUpgrades.gte(SUCost[id-1])) {
+        SUpgrades = SUpgrades.sub(SUCost[id-1])
+        SUs[id-1] += 1
+    }
+}
+
 function tierUp() {
-    if (tier < 3) {
+    if (tier < 2) {
         if (points.gte(tiercost)) {
-            let oldTier = tier;
-            points = new Decimal(0)
-            upgrades = new Decimal(0)
-            b1cost = new Decimal(10)
-            UPgenTick = tickspeed
-            SUpgrades = new Decimal(0)
-            tier = tier + 1;
-            tickspeed = 1000 * (0.9 ** tier)
-            getNewTierCosts()
-            getNewTierDisplay()
-            showTierUpAnimation(oldTier, tier);
+            tierReset()
         }
     }
-    if (tier == 3) {
+    if (tier == 2) {
         if (SUpgrades.gte(tiercost)) { 
-            let oldTier = tier;
-            points = new Decimal(0)
-            upgrades = new Decimal(0)
-            b1cost = new Decimal(10)
-            UPgenTick = tickspeed
-            SUpgrades = new Decimal(0)
-            tier = tier + 1;
-            tickspeed = 1000 * (0.9 ** tier)
-            getNewTierCosts()
-            getNewTierDisplay()
-            showTierUpAnimation(oldTier, tier);
+            tierReset()
         }
     }
+}
+
+function tierReset() {
+    let oldTier = tier;
+    points = new Decimal(0)
+    upgrades = new Decimal(0)
+    b1cost = new Decimal(10)
+    UPgenTick = tickspeed
+    SUpgrades = new Decimal(0)
+    SUs = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    Boosters = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    SUCost = [new Decimal(1),new Decimal(10)]
+    tier = tier + 1;
+    tickspeed = 1000 * (0.9 ** tier)
+    getNewTierCosts()
+    getNewTierDisplay()
+    showTierUpAnimation(oldTier, tier);
+}
+function superReset() {
+    let gain = Decimal.floor(upgrades.div(500)); // calculate BEFORE wiping upgrades
+    points = new Decimal(0);
+    Boosters = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    upgrades = new Decimal(0);
+    b1cost = new Decimal(10);
+    UPgenTick = tickspeed;
+    SUpgrades = SUpgrades.add(gain);
+    tickspeed = 1000 * (0.9 ** tier);
 }
 
 function showTierUpAnimation(oldT, newT) {
@@ -278,7 +437,7 @@ function getNewTierCosts() {
     } else if (tier == 1) {
         tiercost = new Decimal(1e40)
     } else if (tier == 2) {
-        tiercost = new Decimal("ee10") // Fixed excessive 'e's which might crash display
+        tiercost = new Decimal(6) // Fixed excessive 'e's which might crash display
     } else {
         tiercost = new Decimal("ee100") // Fallback for tier 3+
     }
@@ -286,13 +445,13 @@ function getNewTierCosts() {
 
 function getNewTierDisplay() {
     PointMult = [1.5, 1.5, 1.6, 1.7, 1.8]
-    UpgMult = [1, 1, 2, 3, 4]
+    UpgMult = [1, 1, 2, 3.75, 7]
     if (tier == 0) {
         document.getElementById("currenttierunlock").innerHTML = ""
         document.getElementById("nexttierunlock").innerHTML = `UNLOCK: <span class='benefit-yellow'>${tierUnl[tier + 1] || 'Unknown'}</span>`
     } else {
         document.getElementById("currenttierunlock").innerHTML = `UNLOCK: <span class='benefit-yellow'>${tierUnl[tier] || 'Unknown'}</span>`
-        document.getElementById("nexttierunlock").innerHTML = `UNLOCK: <span class='benefit-yellow'>${tierUnl[tier + 1] || 'Max Tier reached'}</span>`
+        document.getElementById("nexttierunlock").innerHTML = `UNLOCK: <span class='benefit-yellow'>${tierUnl[tier + 1] || 'Wait for a future update!'}</span>`
     }
     
     let curPtMult = PointMult[tier] || 1;

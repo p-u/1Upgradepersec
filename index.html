@@ -560,6 +560,7 @@
       x1.00</button>
     <h1 class="title">One Upgrade per Second</h1>
   </div>
+  <h2 class="header" style="color:rgb(208, 208, 0); margin-top: 0px;" id="surgestatus" hidden>SURGE STATUS: INACTIVE (Recharging: 0%)</h2>
 
   <div class="tabs">
     <button class="tab active" id="mainTab">Main</button>
@@ -578,6 +579,20 @@
       <span class="upg-desc" id="b1-desc">Reduces tickspeed by 10%<br> Tickspeed: 1.000s >> 0.900s</span>
     </button>
     <div class="stat-line SUpgrade-line" id="SUpgradeDisplay">Super Upgrades: 0 (Gain: 0, Next at 500 Upgrades)</div>
+    <button class="premium-btn" id="superUpBtn" onclick="superReset()" hidden disabled
+      style="margin-top: 20px; width: 100%;">Reset for Super Upgrades!</button>
+    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+      <button id="SU1" class="premium-btn btn-glow-blue" hidden onclick="buySU(1)">
+        <span style="width: 50%" class="upg-title">Super Upgrade I</span>
+        <span class="upg-cost" id="SU1-cost">Cost: 1 Super Upgrades</span>
+        <span class="upg-desc" id="SU1-desc">+1 Base Upgrade a second<br>Total: +0 Upgrades</span>
+      </button>
+      <button id="SU2" class="premium-btn btn-glow-blue" disabled hidden onclick="buySU(2)">
+        <span style="width: 50%" class="upg-title">Super Upgrade II (Limit: 2)</span>
+        <span class="upg-cost" id="SU2-cost">Cost: 10 Super Upgrades</span>
+        <span class="upg-desc" id="SU2-desc">Cost scaling of Super Upgrade I and Booster I is weakened.</span>
+      </button>
+    </div>
   </div>
 
   <!-- TIER UP -->
